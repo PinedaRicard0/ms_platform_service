@@ -8,10 +8,10 @@ namespace PlatformService.Data.Interfaces
 {
     public interface IPlatformRepo
     {
-        bool SaveChanges();
+        Task<bool> SaveChanges();
         Task<IEnumerable<Platform>> GetAllPlatforms();
         Task<Platform> GetPlatformById(int id);
-        void CreatePlatform(Platform platform);
+        Task CreatePlatform(Platform platform);
 
     }
 }

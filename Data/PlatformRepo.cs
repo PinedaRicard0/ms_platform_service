@@ -17,13 +17,13 @@ namespace PlatformService.Data
             _context = context;
         }
 
-        public void CreatePlatform(Platform platform)
+        public async Task CreatePlatform (Platform platform)
         {
             if (platform == null)
             {
                 throw new ArgumentNullException(nameof(platform));
             }
-            _context.Platform.Add(platform);
+            await _context.Platform.AddAsync(platform);
         }
 
         public async Task<IEnumerable<Platform>> GetAllPlatforms()
@@ -36,9 +36,9 @@ namespace PlatformService.Data
             return await _context.Platform.FirstOrDefaultAsync(p => p.Id == id);
         }
 
-        public bool SaveChanges()
+        public async Task<bool> SaveChanges()
         {
-            return (_context.SaveChanges() >= 0);
+            return (await _context.SaveChangesAsync() >= 0);
         }
     }
 }
