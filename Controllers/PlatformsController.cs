@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using PlatformService.Data.Interfaces;
 using PlatformService.Dtos;
 using PlatformService.Models;
+using PlatformService.SyncDataServices.Http;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -16,11 +17,13 @@ namespace PlatformService.Controllers
     {
         private readonly IPlatformRepo _platformRepo;
         private readonly IMapper _mapper;
+        private readonly ICommandDataClient _commandDataCliente;
 
-        public PlatformsController(IPlatformRepo platformRepo, IMapper mapper)
+        public PlatformsController(IPlatformRepo platformRepo, IMapper mapper, ICommandDataClient commandDataCliente)
         {
             _platformRepo = platformRepo;
             _mapper = mapper;
+            _commandDataCliente = commandDataCliente;
         }
 
         [HttpGet]
@@ -54,10 +57,14 @@ namespace PlatformService.Controllers
                 await _platformRepo.CreatePlatform(toSavePlatform);
                 await _platformRepo.SaveChanges();
                 PlatformReadDto platformResponse = _mapper.Map<PlatformReadDto>(toSavePlatform);
+
+                await _commandDataCliente.SendPlatformToCommand(platformResponse);
+
                 return CreatedAtRoute(nameof(GetPlatformsById), new { Id = platformResponse.Id }, platformResponse);
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"oopp!! Something bad happends {ex.Message}");
                 return StatusCode(StatusCodes.Status500InternalServerError,ex.Message);
             }
 
