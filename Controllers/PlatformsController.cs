@@ -54,13 +54,13 @@ namespace PlatformService.Controllers
             try
             {
                 Platform toSavePlatform = _mapper.Map<Platform>(platformCreate);
-                await _platformRepo.CreatePlatform(toSavePlatform);
-                await _platformRepo.SaveChanges();
+                //await _platformRepo.CreatePlatform(toSavePlatform);
+                //await _platformRepo.SaveChanges();
                 PlatformReadDto platformResponse = _mapper.Map<PlatformReadDto>(toSavePlatform);
 
                 await _commandDataCliente.SendPlatformToCommand(platformResponse);
 
-                return CreatedAtRoute(nameof(GetPlatformsById), new { Id = platformResponse.Id }, platformResponse);
+                return CreatedAtRoute(nameof(GetPlatformsById), new { Id = 15 }, platformResponse);
             }
             catch (Exception ex)
             {
