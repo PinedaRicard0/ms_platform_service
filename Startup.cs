@@ -29,10 +29,8 @@ namespace PlatformService
         {
             if (_env.IsProduction())
             {
-                Console.WriteLine($"using IN Memory DB");
-                services.AddDbContext<AppDbContext>(opt => opt.UseInMemoryDatabase("InMem"));
-                //Console.WriteLine($"using SQL Server");
-                //services.AddDbContext<AppDbContext>(opt => opt.UseSqlServer(Configuration.GetConnectionString("PlatformString")));  
+                Console.WriteLine($"using SQL Server");
+                services.AddDbContext<AppDbContext>(opt => opt.UseSqlServer(Configuration.GetConnectionString("PlatformString")));
             }
             else {
                 Console.WriteLine($"using IN Memory DB");
@@ -70,7 +68,7 @@ namespace PlatformService
                 endpoints.MapControllers();
             });
 
-            PredDb.PrepPopulation(app);
+            PredDb.PrepPopulation(app, env.IsProduction());
         }
     }
 }
