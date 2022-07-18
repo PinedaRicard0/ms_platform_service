@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using PlatformService.AsyncDataServices;
 using PlatformService.Data.Interfaces;
 using PlatformService.Dtos;
 using PlatformService.Models;
@@ -18,12 +19,14 @@ namespace PlatformService.Controllers
         private readonly IPlatformRepo _platformRepo;
         private readonly IMapper _mapper;
         private readonly ICommandDataClient _commandDataCliente;
+        private readonly IMessageBusClient _messageBusCliente;
 
-        public PlatformsController(IPlatformRepo platformRepo, IMapper mapper, ICommandDataClient commandDataCliente)
+        public PlatformsController(IPlatformRepo platformRepo, IMapper mapper, ICommandDataClient commandDataCliente, IMessageBusClient messageBusClient)
         {
             _platformRepo = platformRepo;
             _mapper = mapper;
             _commandDataCliente = commandDataCliente;
+            _messageBusCliente = messageBusClient;
         }
 
         [HttpGet]
@@ -51,22 +54,34 @@ namespace PlatformService.Controllers
             {
                 return BadRequest();
             }
+
+            Platform toSavePlatform = _mapper.Map<Platform>(platformCreate);
+            await _platformRepo.CreatePlatform(toSavePlatform);
+            await _platformRepo.SaveChanges();
+            PlatformReadDto platformResponse = _mapper.Map<PlatformReadDto>(toSavePlatform);
+
             try
             {
-                Platform toSavePlatform = _mapper.Map<Platform>(platformCreate);
-                await _platformRepo.CreatePlatform(toSavePlatform);
-                await _platformRepo.SaveChanges();
-                PlatformReadDto platformResponse = _mapper.Map<PlatformReadDto>(toSavePlatform);
-
+                //Send Sync Message
                 await _commandDataCliente.SendPlatformToCommand(platformResponse);
-
-                return CreatedAtRoute(nameof(GetPlatformsById), new { Id = 15 }, platformResponse);
             }
-            catch (Exception ex)
+            catch (Exception syn)
             {
-                Console.WriteLine($"oopp!! Something bad happends {ex.Message}");
-                return StatusCode(StatusCodes.Status500InternalServerError,ex.Message);
+                Console.WriteLine($"Could not sent Synchronously message {syn.Message}");
+                //return StatusCode(StatusCodes.Status500InternalServerError, syn.Message);
             }
+            try
+            {
+                var platformPublished = _mapper.Map<PlatformPublishedDto>(platformResponse);
+                platformPublished.Event = "Platform_Published";
+                _messageBusCliente.PublishNewPlatform(platformPublished);
+            }
+            catch (Exception asyn)
+            {
+                Console.WriteLine($"Could not sent Asynchronously message {asyn.Message}");
+                //return StatusCode(StatusCodes.Status500InternalServerError, asyn.Message);
+            }
+            return CreatedAtRoute(nameof(GetPlatformsById), new { Id = 15 }, platformResponse);
 
         }
     }
